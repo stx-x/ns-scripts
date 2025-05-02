@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         NodeSeek 图片上传工具
 // @namespace    https://www.nodeseek.com/
-// @version      1.4.0
-// @description  为 NodeSeek 论坛编辑器添加一键图片上传功能，自动压缩大图片，支持自定义 Token
+// @version      1.5.0
+// @description  为 NodeSeek 论坛编辑器添加一键图片上传功能，支持多图片同时上传，自动压缩大图片，支持自定义 Token
 // @author       Claude 3.7
 // @match        https://www.nodeseek.com/*
 // @grant        none
@@ -35,6 +35,7 @@
       BUTTON_CLASS: "ns-image-uploader",
       SETTINGS_BUTTON_CLASS: "ns-settings-button",
       NOTIFICATION_DURATION: 3000,
+      MAX_CONCURRENT_UPLOADS: 3, // 最大并发上传数
     },
     // 存储键
     STORAGE_KEYS: {
@@ -52,6 +53,10 @@
       this.setupUI();
       this.addEventListeners();
       this.observeDOM();
+      this.uploadQueue = []; // 上传队列
+      this.activeUploads = 0; // 当前活跃的上传任务数
+      this.uploadResults = { success: 0, failed: 0, total: 0 }; // 上传结果统计
+      this.lastUploadTask = null; // 存储最后一个上传任务的引用
     }
 
     /**
@@ -160,6 +165,7 @@
                     transition: all 0.3s ease;
                     opacity: 0;
                     transform: translateY(20px);
+                    max-width: 400px;
                 }
 
                 .ns-notification.success {
@@ -177,6 +183,29 @@
                 .ns-notification.visible {
                     opacity: 1;
                     transform: translateY(0);
+                }
+
+                /* 多图上传进度显示 */
+                .ns-upload-progress {
+                    margin-top: 5px;
+                    font-size: 12px;
+                }
+
+                /* 进度条容器 */
+                .ns-progress-bar-container {
+                    height: 6px;
+                    background-color: rgba(0, 0, 0, 0.1);
+                    border-radius: 3px;
+                    margin-top: 4px;
+                    overflow: hidden;
+                }
+
+                /* 进度条 */
+                .ns-progress-bar {
+                    height: 100%;
+                    background-color: #4CAF50;
+                    border-radius: 3px;
+                    transition: width 0.3s ease;
                 }
 
                 /* 设置面板样式 */
@@ -399,7 +428,7 @@
             <button class="ns-settings-btn ns-save-btn">保存</button>
           </div>
 
-          <div class="ns-settings-version">v1.4.0</div>
+          <div class="ns-settings-version">v1.5.0</div>
         </div>
       `;
 
@@ -524,7 +553,7 @@
       // 创建上传按钮
       const uploadButton = document.createElement("span");
       uploadButton.className = `toolbar-item i-icon ${CONFIG.UI.BUTTON_CLASS}`;
-      uploadButton.title = `上传图片 (最大${CONFIG.UPLOAD.MAX_SIZE}MB，超限自动压缩)`;
+      uploadButton.title = `上传图片 (最大${CONFIG.UPLOAD.MAX_SIZE}MB，超限自动压缩，支持多图同时上传)`;
       uploadButton.innerHTML = this.getUploadButtonSVG();
 
       // 添加按钮点击事件
@@ -585,7 +614,6 @@
         this.addButtons();
       }
     }
-
     /**
      * 观察DOM变化，处理动态加载的编辑器
      */
@@ -619,6 +647,7 @@
       const fileInput = document.createElement("input");
       fileInput.type = "file";
       fileInput.accept = "image/*";
+      fileInput.multiple = true; // 支持多文件选择
       fileInput.style.display = "none";
       document.body.appendChild(fileInput);
 
@@ -626,96 +655,54 @@
       fileInput.addEventListener("change", async () => {
         try {
           if (fileInput.files && fileInput.files.length > 0) {
-            const file = fileInput.files[0];
+            const files = Array.from(fileInput.files);
             const originalButtonContent = button.innerHTML;
             const originalButtonTitle = button.title;
 
             // 设置按钮加载状态
-            this.setButtonLoading(button, true, "上传中...");
+            this.setButtonLoading(button, true, "准备上传...");
 
-            // 先插入占位的Markdown代码
-            const placeholderId = `upload-${Date.now()}`;
-            const placeholderText = `![正在上传 ${file.name}...](uploading#${placeholderId})`;
-            const placeholderPosition = this.insertMarkdownImage(
-              file.name,
-              placeholderText,
+            // 初始化上传状态
+            this.uploadResults = {
+              success: 0,
+              failed: 0,
+              total: files.length,
+            };
+
+            // 创建进度通知
+            this.showProgressNotification(
+              `准备上传 ${files.length} 张图片...`,
+              0,
             );
 
-            // 异步处理图片上传
-            (async () => {
-              // 检查是否需要压缩
-              let fileToUpload = file;
-              const fileSizeInMB = file.size / (1024 * 1024);
+            // 将所有文件添加到上传队列
+            files.forEach((file) => {
+              const task = {
+                file,
+                button,
+                originalButtonContent,
+                originalButtonTitle,
+              };
+              this.uploadQueue.push(task);
 
-              if (fileSizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
-                // 设置按钮为压缩状态
-                this.setButtonLoading(button, true, "压缩中...");
+              // 保存最后一个任务的引用，确保队列清空后仍能恢复按钮状态
+              this.lastUploadTask = task;
+            });
 
-                // 压缩图片
-                try {
-                  fileToUpload = await this.compressImage(file);
-                  // 检查压缩后的大小
-                  const compressedSizeMB = fileToUpload.size / (1024 * 1024);
-                  console.log(
-                    `图片已压缩: ${fileSizeInMB.toFixed(2)}MB -> ${compressedSizeMB.toFixed(2)}MB`,
-                  );
-                } catch (error) {
-                  console.error("压缩失败:", error);
-                  this.showNotification(`压缩失败: ${error.message}`, "error");
-                  this.setButtonLoading(
-                    button,
-                    false,
-                    originalButtonTitle,
-                    originalButtonContent,
-                  );
-                  return;
-                }
-
-                // 恢复为上传状态
-                this.setButtonLoading(button, true, "上传中...");
-              }
-
-              // 上传图片
-              try {
-                const imageUrl = await this.uploadImage(fileToUpload);
-
-                // 替换占位的Markdown代码
-                this.replaceMarkdownPlaceholder(
-                  placeholderId,
-                  file.name,
-                  imageUrl,
-                );
-
-                // 显示成功通知
-                const wasCompressed = file !== fileToUpload;
-                const message = wasCompressed
-                  ? "图片已自动压缩并上传成功！"
-                  : "图片上传成功！";
-                this.showNotification(message, "success");
-              } catch (error) {
-                console.error("上传失败:", error);
-                this.showNotification(`上传失败: ${error.message}`, "error");
-                // 上传失败时更新占位符
-                this.replaceMarkdownPlaceholder(
-                  placeholderId,
-                  file.name,
-                  "upload-failed",
-                  `![上传失败: ${file.name}](upload-failed)`,
-                );
-              } finally {
-                // 恢复按钮状态
-                this.setButtonLoading(
-                  button,
-                  false,
-                  originalButtonTitle,
-                  originalButtonContent,
-                );
-              }
-            })();
+            // 开始处理上传队列
+            this.processUploadQueue();
           }
         } catch (error) {
           console.error("处理错误:", error);
           this.showNotification(`错误: ${error.message}`, "error");
+          // 出错时也要恢复按钮状态
+          this.setButtonLoading(
+            button,
+            false,
+            originalButtonTitle ||
+              `上传图片 (最大${CONFIG.UPLOAD.MAX_SIZE}MB，超限自动压缩，支持多图同时上传)`,
+            originalButtonContent,
+          );
         } finally {
           // 清理文件输入框
           document.body.removeChild(fileInput);
@@ -724,6 +711,219 @@
 
       // 触发文件选择
       fileInput.click();
+    }
+
+    /**
+     * 处理上传队列
+     */
+    processUploadQueue() {
+      // 检查是否有正在等待的上传任务
+      if (this.uploadQueue.length === 0 && this.activeUploads === 0) {
+        // 所有上传已完成，首先移除进度通知
+        const progressNotification = document.querySelector(
+          ".ns-progress-notification",
+        );
+        if (progressNotification) {
+          progressNotification.classList.remove("visible");
+
+          // 等待进度通知消失后再显示最终结果
+          progressNotification.addEventListener(
+            "transitionend",
+            () => {
+              if (progressNotification.parentNode) {
+                document.body.removeChild(progressNotification);
+
+                // 显示最终结果通知
+                const { success, failed, total } = this.uploadResults;
+                if (failed === 0) {
+                  this.showNotification(
+                    `所有 ${total} 张图片上传成功！`,
+                    "success",
+                  );
+                } else {
+                  this.showNotification(
+                    `上传完成: ${success} 成功, ${failed} 失败 (共 ${total} 张)`,
+                    failed > 0 ? "error" : "success",
+                  );
+                }
+              }
+            },
+            { once: true },
+          );
+        } else {
+          // 如果没有进度通知，直接显示结果
+          const { success, failed, total } = this.uploadResults;
+          if (failed === 0) {
+            this.showNotification(`所有 ${total} 张图片上传成功！`, "success");
+          } else {
+            this.showNotification(
+              `上传完成: ${success} 成功, ${failed} 失败 (共 ${total} 张)`,
+              failed > 0 ? "error" : "success",
+            );
+          }
+        }
+
+        // 恢复按钮状态
+        const { button, originalButtonContent, originalButtonTitle } =
+          this.uploadQueue.length > 0
+            ? this.uploadQueue[0]
+            : this.lastUploadTask;
+        if (button) {
+          this.setButtonLoading(
+            button,
+            false,
+            originalButtonTitle ||
+              `上传图片 (最大${CONFIG.UPLOAD.MAX_SIZE}MB，超限自动压缩，支持多图同时上传)`,
+            originalButtonContent,
+          );
+        }
+
+        return;
+      }
+
+      // 控制并发上传数量
+      while (
+        this.uploadQueue.length > 0 &&
+        this.activeUploads < CONFIG.UI.MAX_CONCURRENT_UPLOADS
+      ) {
+        const uploadTask = this.uploadQueue.shift();
+        this.activeUploads++;
+
+        // 异步处理单个文件上传
+        this.uploadSingleFile(uploadTask).finally(() => {
+          this.activeUploads--;
+          // 更新进度显示
+          const { success, failed, total } = this.uploadResults;
+          const completed = success + failed;
+          const progress = (completed / total) * 100;
+
+          this.showProgressNotification(
+            `上传进度: ${completed}/${total} (${success} 成功, ${failed} 失败)`,
+            progress,
+          );
+
+          // 继续处理队列中的下一个文件
+          this.processUploadQueue();
+        });
+      }
+    }
+
+    /**
+     * 上传单个文件
+     * @param {Object} uploadTask - 上传任务对象
+     * @returns {Promise<void>}
+     */
+    async uploadSingleFile(uploadTask) {
+      const { file, button } = uploadTask;
+
+      try {
+        // 先插入占位的Markdown代码
+        const placeholderId = `upload-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const placeholderText = `![正在上传 ${file.name}...](uploading#${placeholderId})`;
+        this.insertMarkdownImage(file.name, placeholderText);
+
+        // 检查是否需要压缩
+        let fileToUpload = file;
+        const fileSizeInMB = file.size / (1024 * 1024);
+
+        if (fileSizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
+          // 压缩图片
+          try {
+            fileToUpload = await this.compressImage(file);
+            // 检查压缩后的大小
+            const compressedSizeMB = fileToUpload.size / (1024 * 1024);
+            console.log(
+              `图片已压缩: ${fileSizeInMB.toFixed(2)}MB -> ${compressedSizeMB.toFixed(2)}MB`,
+            );
+          } catch (error) {
+            console.error("压缩失败:", error);
+            this.uploadResults.failed++;
+            this.replaceMarkdownPlaceholder(
+              placeholderId,
+              file.name,
+              "upload-failed",
+              `![压缩失败: ${file.name}](upload-failed)`,
+            );
+            return;
+          }
+        }
+
+        // 上传图片
+        const imageUrl = await this.uploadImage(fileToUpload);
+
+        // 替换占位的Markdown代码
+        this.replaceMarkdownPlaceholder(placeholderId, file.name, imageUrl);
+
+        // 更新成功计数
+        this.uploadResults.success++;
+      } catch (error) {
+        console.error(`上传失败 (${file.name}):`, error);
+        // 更新失败计数
+        this.uploadResults.failed++;
+        // 上传失败时更新占位符
+        this.replaceMarkdownPlaceholder(
+          placeholderId,
+          file.name,
+          "upload-failed",
+          `![上传失败: ${file.name}](upload-failed)`,
+        );
+      }
+    }
+
+    /**
+     * 显示进度通知
+     * @param {string} message - 通知消息
+     * @param {number} progress - 进度百分比 (0-100)
+     */
+    showProgressNotification(message, progress) {
+      // 查找已有的进度通知或创建新的
+      let notification = document.querySelector(".ns-progress-notification");
+
+      if (!notification) {
+        notification = document.createElement("div");
+        notification.className =
+          "ns-notification ns-progress-notification info";
+
+        notification.innerHTML = `
+            <div>${message}</div>
+            <div class="ns-upload-progress">
+              <div class="ns-progress-bar-container">
+                <div class="ns-progress-bar" style="width: ${progress}%"></div>
+              </div>
+            </div>
+          `;
+
+        document.body.appendChild(notification);
+
+        // 使通知可见
+        setTimeout(() => {
+          notification.classList.add("visible");
+        }, 10);
+      } else {
+        // 更新现有通知
+        notification.querySelector("div:first-child").textContent = message;
+        notification.querySelector(".ns-progress-bar").style.width =
+          `${progress}%`;
+      }
+
+      // 如果进度到100%，5秒后自动移除进度通知
+      if (progress >= 100) {
+        setTimeout(() => {
+          if (notification && notification.parentNode) {
+            notification.classList.remove("visible");
+
+            notification.addEventListener(
+              "transitionend",
+              () => {
+                if (notification.parentNode) {
+                  document.body.removeChild(notification);
+                }
+              },
+              { once: true },
+            );
+          }
+        }, 5000);
+      }
     }
 
     /**
@@ -921,12 +1121,12 @@
         const cursor = cm.getCursor();
 
         // 插入内容
-        cm.replaceRange(imageMarkdown, cursor);
+        cm.replaceRange(imageMarkdown + "\n", cursor);
 
         // 将光标移动到插入内容之后
         cm.setCursor({
-          line: cursor.line,
-          ch: cursor.ch + imageMarkdown.length,
+          line: cursor.line + 1,
+          ch: 0,
         });
 
         // 聚焦编辑器
@@ -957,11 +1157,12 @@
         textarea.value =
           textarea.value.substring(0, startPos) +
           imageMarkdown +
+          "\n" +
           textarea.value.substring(endPos);
 
         // 设置新的光标位置
         textarea.selectionStart = textarea.selectionEnd =
-          startPos + imageMarkdown.length;
+          startPos + imageMarkdown.length + 1;
 
         // 聚焦输入框
         textarea.focus();
@@ -1047,11 +1248,17 @@
      * 显示通知消息
      * @param {string} message - 通知消息内容
      * @param {string} type - 通知类型 ('success', 'error', 或 'info')
+     * @param {number} [duration] - 通知显示时间（毫秒）
      */
-    showNotification(message, type) {
-      // 删除现有通知
-      const existingNotifications =
-        document.querySelectorAll(".ns-notification");
+    showNotification(
+      message,
+      type,
+      duration = CONFIG.UI.NOTIFICATION_DURATION,
+    ) {
+      // 删除同类型的现有通知（保留进度通知）
+      const existingNotifications = document.querySelectorAll(
+        `.ns-notification:not(.ns-progress-notification)`,
+      );
       existingNotifications.forEach((notification) => {
         document.body.removeChild(notification);
       });
@@ -1081,7 +1288,7 @@
           },
           { once: true },
         );
-      }, CONFIG.UI.NOTIFICATION_DURATION);
+      }, duration);
     }
   }
 
@@ -1089,5 +1296,5 @@
   new ImageUploader();
 
   // 在控制台显示版本信息
-  console.log("NodeSeek 图片上传工具 v1.4.0 已加载");
+  console.log("NodeSeek 图片上传工具 v1.5.0 已加载");
 })();
