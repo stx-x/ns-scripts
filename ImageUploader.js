@@ -675,6 +675,19 @@
               0,
             );
 
+            // 一次性为所有文件创建占位符
+            const placeholders = {};
+            files.forEach((file) => {
+              const placeholderId = `upload-${Date.now()}-${Math.floor(Math.random() * 1000)}-${file.name.replace(/[^a-z0-9]/gi, "")}`;
+              const placeholderText = `![正在上传 ${file.name}...](uploading#${placeholderId})`;
+
+              // 插入占位符到编辑器
+              this.insertMarkdownImage(file.name, placeholderText);
+
+              // 存储占位符ID与文件的关联
+              placeholders[file.name] = placeholderId;
+            });
+
             // 将所有文件添加到上传队列
             files.forEach((file) => {
               const task = {
@@ -682,6 +695,7 @@
                 button,
                 originalButtonContent,
                 originalButtonTitle,
+                placeholderId: placeholders[file.name], // 存储对应的占位符ID
               };
               this.uploadQueue.push(task);
 
@@ -814,14 +828,9 @@
      * @returns {Promise<void>}
      */
     async uploadSingleFile(uploadTask) {
-      const { file, button } = uploadTask;
+      const { file, button, placeholderId } = uploadTask;
 
       try {
-        // 先插入占位的Markdown代码
-        const placeholderId = `upload-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-        const placeholderText = `![正在上传 ${file.name}...](uploading#${placeholderId})`;
-        this.insertMarkdownImage(file.name, placeholderText);
-
         // 检查是否需要压缩
         let fileToUpload = file;
         const fileSizeInMB = file.size / (1024 * 1024);
@@ -1174,6 +1183,14 @@
           start: startPos,
           end: startPos + imageMarkdown.length,
         };
+      }
+
+      // 如果是插入多张图片的最后一张，确保光标回到编辑区末尾
+      const isLastImage = fileName.includes("__LAST__");
+      if (isLastImage && editorElement?.CodeMirror) {
+        const cm = editorElement.CodeMirror;
+        cm.setCursor(cm.lineCount(), 0);
+        cm.focus();
       }
 
       return null;
