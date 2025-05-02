@@ -60,8 +60,12 @@
     loadSettings() {
       // 初始化 Token 设置
       this.settings = {
-        primaryToken: localStorage.getItem(CONFIG.STORAGE_KEYS.PRIMARY_TOKEN) || this.generateRandomToken(),
-        backupToken: localStorage.getItem(CONFIG.STORAGE_KEYS.BACKUP_TOKEN) || this.generateRandomToken(),
+        primaryToken:
+          localStorage.getItem(CONFIG.STORAGE_KEYS.PRIMARY_TOKEN) ||
+          this.generateRandomToken(),
+        backupToken:
+          localStorage.getItem(CONFIG.STORAGE_KEYS.BACKUP_TOKEN) ||
+          this.generateRandomToken(),
       };
 
       // 如果是首次使用，保存默认生成的随机 Token
@@ -74,8 +78,14 @@
      * 保存设置到本地存储
      */
     saveSettings() {
-      localStorage.setItem(CONFIG.STORAGE_KEYS.PRIMARY_TOKEN, this.settings.primaryToken);
-      localStorage.setItem(CONFIG.STORAGE_KEYS.BACKUP_TOKEN, this.settings.backupToken);
+      localStorage.setItem(
+        CONFIG.STORAGE_KEYS.PRIMARY_TOKEN,
+        this.settings.primaryToken,
+      );
+      localStorage.setItem(
+        CONFIG.STORAGE_KEYS.BACKUP_TOKEN,
+        this.settings.backupToken,
+      );
     }
 
     /**
@@ -83,15 +93,18 @@
      * @returns {string} 随机生成的 Token
      */
     generateRandomToken() {
-      const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+      const characters =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
       const length = 24;
-      let result = '';
+      let result = "";
       const charactersLength = characters.length;
-      
+
       for (let i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+        result += characters.charAt(
+          Math.floor(Math.random() * charactersLength),
+        );
       }
-      
+
       return result;
     }
 
@@ -344,23 +357,23 @@
      */
     createSettingsModal() {
       // 如果设置面板已存在，不重复创建
-      if (document.querySelector('.ns-settings-modal')) {
+      if (document.querySelector(".ns-settings-modal")) {
         return;
       }
 
       // 创建设置面板
-      const modal = document.createElement('div');
-      modal.className = 'ns-settings-modal';
-      
+      const modal = document.createElement("div");
+      modal.className = "ns-settings-modal";
+
       modal.innerHTML = `
         <div class="ns-settings-container">
           <div class="ns-settings-header">
             <h3 class="ns-settings-title">图片上传设置</h3>
             <button class="ns-settings-close">&times;</button>
           </div>
-          
+
           <p>自定义上传 Token，保护您的上传权限不被他人使用。</p>
-          
+
           <div class="ns-settings-form">
             <div class="ns-input-group">
               <label for="ns-primary-token">主要 Token</label>
@@ -370,7 +383,7 @@
               </div>
               <div class="ns-description">主要上传请求会优先使用此 Token</div>
             </div>
-            
+
             <div class="ns-input-group">
               <label for="ns-backup-token">备用 Token</label>
               <div class="ns-token-input-wrapper">
@@ -380,50 +393,52 @@
               <div class="ns-description">当主要 Token 失效时，将使用此备用 Token</div>
             </div>
           </div>
-          
+
           <div class="ns-settings-footer">
             <button class="ns-settings-btn ns-cancel-btn">取消</button>
             <button class="ns-settings-btn ns-save-btn">保存</button>
           </div>
-          
+
           <div class="ns-settings-version">v1.4.0</div>
         </div>
       `;
-      
+
       document.body.appendChild(modal);
-      
+
       // 绑定事件
       // 关闭按钮
-      modal.querySelector('.ns-settings-close').addEventListener('click', () => {
-        this.hideSettingsModal();
-      });
-      
+      modal
+        .querySelector(".ns-settings-close")
+        .addEventListener("click", () => {
+          this.hideSettingsModal();
+        });
+
       // 取消按钮
-      modal.querySelector('.ns-cancel-btn').addEventListener('click', () => {
+      modal.querySelector(".ns-cancel-btn").addEventListener("click", () => {
         this.hideSettingsModal();
       });
-      
+
       // 保存按钮
-      modal.querySelector('.ns-save-btn').addEventListener('click', () => {
+      modal.querySelector(".ns-save-btn").addEventListener("click", () => {
         this.saveTokenSettings();
       });
-      
+
       // 随机按钮事件
-      modal.querySelectorAll('.ns-random-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
+      modal.querySelectorAll(".ns-random-btn").forEach((button) => {
+        button.addEventListener("click", (e) => {
           const target = e.target.dataset.target;
           const randomToken = this.generateRandomToken();
-          
-          if (target === 'primary') {
-            modal.querySelector('#ns-primary-token').value = randomToken;
-          } else if (target === 'backup') {
-            modal.querySelector('#ns-backup-token').value = randomToken;
+
+          if (target === "primary") {
+            modal.querySelector("#ns-primary-token").value = randomToken;
+          } else if (target === "backup") {
+            modal.querySelector("#ns-backup-token").value = randomToken;
           }
         });
       });
-      
+
       // 点击模态框背景关闭
-      modal.addEventListener('click', (e) => {
+      modal.addEventListener("click", (e) => {
         if (e.target === modal) {
           this.hideSettingsModal();
         }
@@ -434,15 +449,17 @@
      * 显示设置对话框
      */
     showSettingsModal() {
-      const modal = document.querySelector('.ns-settings-modal');
+      const modal = document.querySelector(".ns-settings-modal");
       if (modal) {
         // 更新输入框值为当前设置
-        modal.querySelector('#ns-primary-token').value = this.settings.primaryToken;
-        modal.querySelector('#ns-backup-token').value = this.settings.backupToken;
-        
-        modal.classList.add('visible');
+        modal.querySelector("#ns-primary-token").value =
+          this.settings.primaryToken;
+        modal.querySelector("#ns-backup-token").value =
+          this.settings.backupToken;
+
+        modal.classList.add("visible");
         // 防止背景滚动
-        document.body.style.overflow = 'hidden';
+        document.body.style.overflow = "hidden";
       }
     }
 
@@ -450,11 +467,11 @@
      * 隐藏设置对话框
      */
     hideSettingsModal() {
-      const modal = document.querySelector('.ns-settings-modal');
+      const modal = document.querySelector(".ns-settings-modal");
       if (modal) {
-        modal.classList.remove('visible');
+        modal.classList.remove("visible");
         // 恢复背景滚动
-        document.body.style.overflow = '';
+        document.body.style.overflow = "";
       }
     }
 
@@ -462,31 +479,31 @@
      * 保存 Token 设置
      */
     saveTokenSettings() {
-      const primaryTokenInput = document.querySelector('#ns-primary-token');
-      const backupTokenInput = document.querySelector('#ns-backup-token');
-      
+      const primaryTokenInput = document.querySelector("#ns-primary-token");
+      const backupTokenInput = document.querySelector("#ns-backup-token");
+
       if (!primaryTokenInput.value.trim()) {
-        this.showNotification('主要 Token 不能为空', 'error');
+        this.showNotification("主要 Token 不能为空", "error");
         return;
       }
-      
+
       if (!backupTokenInput.value.trim()) {
-        this.showNotification('备用 Token 不能为空', 'error');
+        this.showNotification("备用 Token 不能为空", "error");
         return;
       }
-      
+
       // 更新设置
       this.settings.primaryToken = primaryTokenInput.value.trim();
       this.settings.backupToken = backupTokenInput.value.trim();
-      
+
       // 保存到本地存储
       this.saveSettings();
-      
+
       // 隐藏设置面板
       this.hideSettingsModal();
-      
+
       // 显示成功通知
-      this.showNotification('设置已保存', 'success');
+      this.showNotification("设置已保存", "success");
     }
 
     /**
@@ -526,7 +543,10 @@
 
       // 将按钮添加到工具栏
       picButton.parentNode.insertBefore(uploadButton, picButton.nextSibling);
-      picButton.parentNode.insertBefore(settingsButton, uploadButton.nextSibling);
+      picButton.parentNode.insertBefore(
+        settingsButton,
+        uploadButton.nextSibling,
+      );
     }
 
     /**
@@ -603,364 +623,471 @@
       document.body.appendChild(fileInput);
 
       // 监听文件选择
-fileInput.addEventListener("change", async () => {
-  try {
-    if (fileInput.files && fileInput.files.length > 0) {
-      const file = fileInput.files[0];
-      const originalButtonContent = button.innerHTML;
-      const originalButtonTitle = button.title;
-
-      // 设置按钮加载状态
-      this.setButtonLoading(button, true, "上传中...");
-
-      // 检查是否需要压缩
-      let fileToUpload = file;
-      const fileSizeInMB = file.size / (1024 * 1024);
-
-      if (fileSizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
-        // 设置按钮为压缩状态
-        this.setButtonLoading(button, true, "压缩中...");
-
-        // 压缩图片
+      fileInput.addEventListener("change", async () => {
         try {
-          fileToUpload = await this.compressImage(file);
-          // 检查压缩后的大小
-          const compressedSizeMB = fileToUpload.size / (1024 * 1024);
-          console.log(
-            `图片已压缩: ${fileSizeInMB.toFixed(2)}MB -> ${compressedSizeMB.toFixed(2)}MB`,
-          );
+          if (fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            const originalButtonContent = button.innerHTML;
+            const originalButtonTitle = button.title;
+
+            // 设置按钮加载状态
+            this.setButtonLoading(button, true, "上传中...");
+
+            // 先插入占位的Markdown代码
+            const placeholderId = `upload-${Date.now()}`;
+            const placeholderText = `![正在上传 ${file.name}...](uploading#${placeholderId})`;
+            const placeholderPosition = this.insertMarkdownImage(
+              file.name,
+              placeholderText,
+            );
+
+            // 异步处理图片上传
+            (async () => {
+              // 检查是否需要压缩
+              let fileToUpload = file;
+              const fileSizeInMB = file.size / (1024 * 1024);
+
+              if (fileSizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
+                // 设置按钮为压缩状态
+                this.setButtonLoading(button, true, "压缩中...");
+
+                // 压缩图片
+                try {
+                  fileToUpload = await this.compressImage(file);
+                  // 检查压缩后的大小
+                  const compressedSizeMB = fileToUpload.size / (1024 * 1024);
+                  console.log(
+                    `图片已压缩: ${fileSizeInMB.toFixed(2)}MB -> ${compressedSizeMB.toFixed(2)}MB`,
+                  );
+                } catch (error) {
+                  console.error("压缩失败:", error);
+                  this.showNotification(`压缩失败: ${error.message}`, "error");
+                  this.setButtonLoading(
+                    button,
+                    false,
+                    originalButtonTitle,
+                    originalButtonContent,
+                  );
+                  return;
+                }
+
+                // 恢复为上传状态
+                this.setButtonLoading(button, true, "上传中...");
+              }
+
+              // 上传图片
+              try {
+                const imageUrl = await this.uploadImage(fileToUpload);
+
+                // 替换占位的Markdown代码
+                this.replaceMarkdownPlaceholder(
+                  placeholderId,
+                  file.name,
+                  imageUrl,
+                );
+
+                // 显示成功通知
+                const wasCompressed = file !== fileToUpload;
+                const message = wasCompressed
+                  ? "图片已自动压缩并上传成功！"
+                  : "图片上传成功！";
+                this.showNotification(message, "success");
+              } catch (error) {
+                console.error("上传失败:", error);
+                this.showNotification(`上传失败: ${error.message}`, "error");
+                // 上传失败时更新占位符
+                this.replaceMarkdownPlaceholder(
+                  placeholderId,
+                  file.name,
+                  "upload-failed",
+                  `![上传失败: ${file.name}](upload-failed)`,
+                );
+              } finally {
+                // 恢复按钮状态
+                this.setButtonLoading(
+                  button,
+                  false,
+                  originalButtonTitle,
+                  originalButtonContent,
+                );
+              }
+            })();
+          }
         } catch (error) {
-          console.error("压缩失败:", error);
-          this.showNotification(`压缩失败: ${error.message}`, "error");
-          this.setButtonLoading(
-            button,
-            false,
-            originalButtonTitle,
-            originalButtonContent,
-          );
+          console.error("处理错误:", error);
+          this.showNotification(`错误: ${error.message}`, "error");
+        } finally {
+          // 清理文件输入框
           document.body.removeChild(fileInput);
-          return;
         }
+      });
 
-        // 恢复为上传状态
-        this.setButtonLoading(button, true, "上传中...");
+      // 触发文件选择
+      fileInput.click();
+    }
+
+    /**
+     * 设置按钮加载状态
+     * @param {HTMLElement} button - 按钮元素
+     * @param {boolean} isLoading - 是否为加载状态
+     * @param {string} title - 按钮标题
+     * @param {string} [content] - 按钮内容 (仅在非加载状态有效)
+     */
+    setButtonLoading(button, isLoading, title, content = null) {
+      if (isLoading) {
+        button.innerHTML = '<span class="ns-spinner"></span>';
+        button.title = title;
+      } else {
+        button.innerHTML = content || this.getUploadButtonSVG();
+        button.title = title;
       }
+    }
 
-      // 上传图片
+    /**
+     * 压缩图片
+     * @param {File} file - 要压缩的图片文件
+     * @returns {Promise<File>} - 返回压缩后的图片文件
+     */
+    async compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+
+        img.onload = () => {
+          // 创建canvas
+          const canvas = document.createElement("canvas");
+          let { width, height } = img;
+
+          // 如果图片尺寸很大，适当缩小以提高压缩效率
+          const MAX_DIMENSION = 4000; // 最大尺寸限制
+          if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            if (width > height) {
+              height = Math.floor(height * (MAX_DIMENSION / width));
+              width = MAX_DIMENSION;
+            } else {
+              width = Math.floor(width * (MAX_DIMENSION / height));
+              height = MAX_DIMENSION;
+            }
+          }
+
+          // 设置canvas尺寸
+          canvas.width = width;
+          canvas.height = height;
+
+          // 绘制图片到canvas
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#FFFFFF"; // 设置白色背景
+          ctx.fillRect(0, 0, width, height);
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 目标大小范围
+          const targetSize = CONFIG.UPLOAD.TARGET_SIZE; // 目标为6.3MB
+
+          // 逐步尝试不同的压缩质量
+          const compressWithQuality = (quality) => {
+            try {
+              canvas.toBlob(
+                (blob) => {
+                  if (!blob) {
+                    reject(new Error("压缩过程中出错"));
+                    return;
+                  }
+
+                  // 检查压缩后的大小
+                  const sizeInMB = blob.size / (1024 * 1024);
+
+                  // 如果大小已经在目标范围内，或已达到最低质量
+                  if (
+                    (sizeInMB <= CONFIG.UPLOAD.MAX_SIZE &&
+                      sizeInMB >= targetSize * 0.9) ||
+                    quality <= 0.5
+                  ) {
+                    // 创建新的文件对象
+                    const compressedFile = new File([blob], file.name, {
+                      type: "image/jpeg",
+                      lastModified: Date.now(),
+                    });
+                    resolve(compressedFile);
+                  }
+                  // 如果大小过大，继续降低质量
+                  else if (sizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
+                    // 降低质量，但避免质量过低
+                    const newQuality = Math.max(0.5, quality - 0.05);
+                    setTimeout(() => compressWithQuality(newQuality), 0);
+                  }
+                  // 如果大小太小，尝试提高质量
+                  else if (sizeInMB < targetSize * 0.85 && quality < 0.95) {
+                    // 提高质量，但不超过0.95
+                    const newQuality = Math.min(0.95, quality + 0.05);
+                    setTimeout(() => compressWithQuality(newQuality), 0);
+                  }
+                  // 如果大小在合理的范围内，接受当前结果
+                  else {
+                    const compressedFile = new File([blob], file.name, {
+                      type: "image/jpeg",
+                      lastModified: Date.now(),
+                    });
+                    resolve(compressedFile);
+                  }
+                },
+                "image/jpeg",
+                quality,
+              );
+            } catch (err) {
+              reject(new Error(`压缩过程中出错: ${err.message}`));
+            }
+          };
+
+          // 开始压缩，初始质量为0.9
+          compressWithQuality(0.9);
+        };
+
+        img.onerror = () => {
+          reject(new Error("图片加载失败"));
+        };
+
+        // 从文件创建URL加载图片
+        img.src = URL.createObjectURL(file);
+      });
+    }
+
+    /**
+     * 上传图片到图床
+     * @param {File} file - 要上传的图片文件
+     * @returns {Promise<string>} - 返回上传后的图片URL
+     */
+    async uploadImage(file) {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      // 尝试使用主令牌
       try {
-        const imageUrl = await this.uploadImage(fileToUpload);
-
-        // 插入Markdown格式图片链接
-        this.insertMarkdownImage(file.name, imageUrl);
-
-        // 显示成功通知
-        const wasCompressed = file !== fileToUpload;
-        const message = wasCompressed
-          ? "图片已自动压缩并上传成功！"
-          : "图片上传成功！";
-        this.showNotification(message, "success");
+        return await this.tryUploadWithToken(
+          formData,
+          this.settings.primaryToken,
+        );
       } catch (error) {
-        console.error("上传失败:", error);
-        this.showNotification(`上传失败: ${error.message}`, "error");
-      } finally {
-        // 恢复按钮状态
-        this.setButtonLoading(
-          button,
-          false,
-          originalButtonTitle,
-          originalButtonContent,
+        console.warn("主令牌上传失败，尝试备用令牌", error);
+        // 如果主令牌失败，尝试备用令牌
+        return await this.tryUploadWithToken(
+          formData,
+          this.settings.backupToken,
         );
       }
     }
-  } catch (error) {
-    console.error("处理错误:", error);
-    this.showNotification(`错误: ${error.message}`, "error");
-  } finally {
-    // 清理文件输入框
-    document.body.removeChild(fileInput);
-  }
-});
 
-// 触发文件选择
-fileInput.click();
-}
+    /**
+     * 使用特定令牌尝试上传
+     * @param {FormData} formData - 表单数据
+     * @param {string} token - 授权令牌
+     * @returns {Promise<string>} - 返回上传后的图片URL
+     */
+    async tryUploadWithToken(formData, token) {
+      const response = await fetch(CONFIG.UPLOAD.URL, {
+        method: "POST",
+        headers: {
+          "Auth-Token": token,
+        },
+        body: formData,
+      });
 
-/**
- * 设置按钮加载状态
- * @param {HTMLElement} button - 按钮元素
- * @param {boolean} isLoading - 是否为加载状态
- * @param {string} title - 按钮标题
- * @param {string} [content] - 按钮内容 (仅在非加载状态有效)
- */
-setButtonLoading(button, isLoading, title, content = null) {
-  if (isLoading) {
-    button.innerHTML = '<span class="ns-spinner"></span>';
-    button.title = title;
-  } else {
-    button.innerHTML = content || this.getUploadButtonSVG();
-    button.title = title;
-  }
-}
+      if (!response.ok) {
+        throw new Error(
+          `上传请求失败: ${response.status} ${response.statusText}`,
+        );
+      }
 
-/**
- * 压缩图片
- * @param {File} file - 要压缩的图片文件
- * @returns {Promise<File>} - 返回压缩后的图片文件
- */
-async compressImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
+      const data = await response.json();
 
-    img.onload = () => {
-      // 创建canvas
-      const canvas = document.createElement("canvas");
-      let { width, height } = img;
+      if (!data.ok) {
+        throw new Error(data.message || "服务器返回错误");
+      }
 
-      // 如果图片尺寸很大，适当缩小以提高压缩效率
-      const MAX_DIMENSION = 4000; // 最大尺寸限制
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        if (width > height) {
-          height = Math.floor(height * (MAX_DIMENSION / width));
-          width = MAX_DIMENSION;
-        } else {
-          width = Math.floor(width * (MAX_DIMENSION / height));
-          height = MAX_DIMENSION;
+      return `${CONFIG.UPLOAD.BASE_URL}${data.src}`;
+    }
+
+    /**
+     * 在编辑器中插入Markdown格式的图片链接
+     * @param {string} fileName - 文件名
+     * @param {string} imageMarkdown - 图片Markdown代码
+     * @returns {Object|null} - 返回插入位置信息
+     */
+    insertMarkdownImage(fileName, imageMarkdown) {
+      // 尝试使用CodeMirror API插入内容
+      const editorElement = document.querySelector(CONFIG.SELECTORS.CODEMIRROR);
+
+      if (editorElement?.CodeMirror) {
+        // 使用CodeMirror API
+        const cm = editorElement.CodeMirror;
+        const cursor = cm.getCursor();
+
+        // 插入内容
+        cm.replaceRange(imageMarkdown, cursor);
+
+        // 将光标移动到插入内容之后
+        cm.setCursor({
+          line: cursor.line,
+          ch: cursor.ch + imageMarkdown.length,
+        });
+
+        // 聚焦编辑器
+        cm.focus();
+
+        // 返回插入位置
+        return {
+          type: "codemirror",
+          instance: cm,
+          from: {
+            line: cursor.line,
+            ch: cursor.ch,
+          },
+          to: {
+            line: cursor.line,
+            ch: cursor.ch + imageMarkdown.length,
+          },
+        };
+      }
+
+      // 如果无法获取CodeMirror实例，尝试使用textarea
+      const textarea = document.querySelector(CONFIG.SELECTORS.TEXTAREA);
+      if (textarea) {
+        const startPos = textarea.selectionStart;
+        const endPos = textarea.selectionEnd;
+
+        // 插入内容
+        textarea.value =
+          textarea.value.substring(0, startPos) +
+          imageMarkdown +
+          textarea.value.substring(endPos);
+
+        // 设置新的光标位置
+        textarea.selectionStart = textarea.selectionEnd =
+          startPos + imageMarkdown.length;
+
+        // 聚焦输入框
+        textarea.focus();
+
+        // 返回插入位置
+        return {
+          type: "textarea",
+          element: textarea,
+          start: startPos,
+          end: startPos + imageMarkdown.length,
+        };
+      }
+
+      return null;
+    }
+
+    /**
+     * 替换占位的Markdown代码
+     * @param {string} placeholderId - 占位符ID
+     * @param {string} fileName - 文件名
+     * @param {string} imageUrl - 图片URL
+     * @param {string} [customMarkdown] - 自定义Markdown代码
+     */
+    replaceMarkdownPlaceholder(
+      placeholderId,
+      fileName,
+      imageUrl,
+      customMarkdown = null,
+    ) {
+      // 获取文件名作为替代文本，去除扩展名
+      const altText = fileName.replace(/\.[^/.]+$/, "");
+
+      // 决定使用哪种Markdown代码
+      const newMarkdown = customMarkdown || `![${altText}](${imageUrl})`;
+
+      // 尝试使用CodeMirror API替换内容
+      const editorElement = document.querySelector(CONFIG.SELECTORS.CODEMIRROR);
+
+      if (editorElement?.CodeMirror) {
+        const cm = editorElement.CodeMirror;
+        const content = cm.getValue();
+
+        // 查找占位符
+        const placeholderRegex = new RegExp(
+          `!\\[.*?\\]\\(uploading#${placeholderId}\\)`,
+          "g",
+        );
+        const match = placeholderRegex.exec(content);
+
+        if (match) {
+          const from = cm.posFromIndex(match.index);
+          const to = cm.posFromIndex(match.index + match[0].length);
+
+          // 替换占位符
+          cm.replaceRange(newMarkdown, from, to);
+          return;
         }
       }
 
-      // 设置canvas尺寸
-      canvas.width = width;
-      canvas.height = height;
+      // 如果无法使用CodeMirror或找不到占位符，尝试使用textarea
+      const textarea = document.querySelector(CONFIG.SELECTORS.TEXTAREA);
+      if (textarea) {
+        const content = textarea.value;
 
-      // 绘制图片到canvas
-      const ctx = canvas.getContext("2d");
-      ctx.fillStyle = "#FFFFFF"; // 设置白色背景
-      ctx.fillRect(0, 0, width, height);
-      ctx.drawImage(img, 0, 0, width, height);
+        // 查找占位符
+        const placeholderRegex = new RegExp(
+          `!\\[.*?\\]\\(uploading#${placeholderId}\\)`,
+          "g",
+        );
+        const match = placeholderRegex.exec(content);
 
-      // 目标大小范围
-      const targetSize = CONFIG.UPLOAD.TARGET_SIZE; // 目标为6.3MB
-
-      // 逐步尝试不同的压缩质量
-      const compressWithQuality = (quality) => {
-        try {
-          canvas.toBlob(
-            (blob) => {
-              if (!blob) {
-                reject(new Error("压缩过程中出错"));
-                return;
-              }
-
-              // 检查压缩后的大小
-              const sizeInMB = blob.size / (1024 * 1024);
-
-              // 如果大小已经在目标范围内，或已达到最低质量
-              if (
-                (sizeInMB <= CONFIG.UPLOAD.MAX_SIZE &&
-                  sizeInMB >= targetSize * 0.9) ||
-                quality <= 0.5
-              ) {
-                // 创建新的文件对象
-                const compressedFile = new File([blob], file.name, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              }
-              // 如果大小过大，继续降低质量
-              else if (sizeInMB > CONFIG.UPLOAD.MAX_SIZE) {
-                // 降低质量，但避免质量过低
-                const newQuality = Math.max(0.5, quality - 0.05);
-                setTimeout(() => compressWithQuality(newQuality), 0);
-              }
-              // 如果大小太小，尝试提高质量
-              else if (sizeInMB < targetSize * 0.85 && quality < 0.95) {
-                // 提高质量，但不超过0.95
-                const newQuality = Math.min(0.95, quality + 0.05);
-                setTimeout(() => compressWithQuality(newQuality), 0);
-              }
-              // 如果大小在合理的范围内，接受当前结果
-              else {
-                const compressedFile = new File([blob], file.name, {
-                  type: "image/jpeg",
-                  lastModified: Date.now(),
-                });
-                resolve(compressedFile);
-              }
-            },
-            "image/jpeg",
-            quality,
-          );
-        } catch (err) {
-          reject(new Error(`压缩过程中出错: ${err.message}`));
+        if (match) {
+          // 替换占位符
+          textarea.value =
+            content.substring(0, match.index) +
+            newMarkdown +
+            content.substring(match.index + match[0].length);
         }
-      };
+      }
+    }
 
-      // 开始压缩，初始质量为0.9
-      compressWithQuality(0.9);
-    };
+    /**
+     * 显示通知消息
+     * @param {string} message - 通知消息内容
+     * @param {string} type - 通知类型 ('success', 'error', 或 'info')
+     */
+    showNotification(message, type) {
+      // 删除现有通知
+      const existingNotifications =
+        document.querySelectorAll(".ns-notification");
+      existingNotifications.forEach((notification) => {
+        document.body.removeChild(notification);
+      });
 
-    img.onerror = () => {
-      reject(new Error("图片加载失败"));
-    };
+      // 创建新通知
+      const notification = document.createElement("div");
+      notification.className = `ns-notification ${type}`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
 
-    // 从文件创建URL加载图片
-    img.src = URL.createObjectURL(file);
-  });
-}
+      // 使通知可见
+      setTimeout(() => {
+        notification.classList.add("visible");
+      }, 10);
 
-/**
- * 上传图片到图床
- * @param {File} file - 要上传的图片文件
- * @returns {Promise<string>} - 返回上传后的图片URL
- */
-async uploadImage(file) {
-  const formData = new FormData();
-  formData.append("image", file);
+      // 通知自动消失
+      setTimeout(() => {
+        notification.classList.remove("visible");
 
-  // 尝试使用主令牌
-  try {
-    return await this.tryUploadWithToken(
-      formData,
-      this.settings.primaryToken
-    );
-  } catch (error) {
-    console.warn("主令牌上传失败，尝试备用令牌", error);
-    // 如果主令牌失败，尝试备用令牌
-    return await this.tryUploadWithToken(
-      formData,
-      this.settings.backupToken
-    );
-  }
-}
-
-/**
- * 使用特定令牌尝试上传
- * @param {FormData} formData - 表单数据
- * @param {string} token - 授权令牌
- * @returns {Promise<string>} - 返回上传后的图片URL
- */
-async tryUploadWithToken(formData, token) {
-  const response = await fetch(CONFIG.UPLOAD.URL, {
-    method: "POST",
-    headers: {
-      "Auth-Token": token,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `上传请求失败: ${response.status} ${response.statusText}`
-    );
+        // 等待过渡效果完成后删除元素
+        notification.addEventListener(
+          "transitionend",
+          () => {
+            if (notification.parentNode) {
+              document.body.removeChild(notification);
+            }
+          },
+          { once: true },
+        );
+      }, CONFIG.UI.NOTIFICATION_DURATION);
+    }
   }
 
-  const data = await response.json();
+  // 初始化上传器
+  new ImageUploader();
 
-  if (!data.ok) {
-    throw new Error(data.message || "服务器返回错误");
-  }
-
-  return `${CONFIG.UPLOAD.BASE_URL}${data.src}`;
-}
-
-/**
- * 在编辑器中插入Markdown格式的图片链接
- * @param {string} fileName - 文件名
- * @param {string} imageUrl - 图片URL
- */
-insertMarkdownImage(fileName, imageUrl) {
-  // 获取文件名作为替代文本，去除扩展名
-  const altText = fileName.replace(/\.[^/.]+$/, "");
-  const imageMarkdown = `![${altText}](${imageUrl})`;
-
-  // 尝试使用CodeMirror API插入内容
-  const editorElement = document.querySelector(CONFIG.SELECTORS.CODEMIRROR);
-
-  if (editorElement?.CodeMirror) {
-    // 使用CodeMirror API
-    const cm = editorElement.CodeMirror;
-    const cursor = cm.getCursor();
-
-    cm.replaceRange(imageMarkdown, cursor);
-
-    // 将光标移动到插入内容之后
-    cm.setCursor({
-      line: cursor.line,
-      ch: cursor.ch + imageMarkdown.length,
-    });
-
-    // 聚焦编辑器
-    cm.focus();
-    return;
-  }
-
-  // 如果无法获取CodeMirror实例，尝试使用textarea
-  const textarea = document.querySelector(CONFIG.SELECTORS.TEXTAREA);
-  if (textarea) {
-    const startPos = textarea.selectionStart;
-    const endPos = textarea.selectionEnd;
-
-    // 插入内容
-    textarea.value =
-      textarea.value.substring(0, startPos) +
-      imageMarkdown +
-      textarea.value.substring(endPos);
-
-    // 设置新的光标位置
-    textarea.selectionStart = textarea.selectionEnd =
-      startPos + imageMarkdown.length;
-
-    // 聚焦输入框
-    textarea.focus();
-  }
-}
-
-/**
- * 显示通知消息
- * @param {string} message - 通知消息内容
- * @param {string} type - 通知类型 ('success', 'error', 或 'info')
- */
-showNotification(message, type) {
-  // 删除现有通知
-  const existingNotifications =
-    document.querySelectorAll(".ns-notification");
-  existingNotifications.forEach((notification) => {
-    document.body.removeChild(notification);
-  });
-
-  // 创建新通知
-  const notification = document.createElement("div");
-  notification.className = `ns-notification ${type}`;
-  notification.textContent = message;
-  document.body.appendChild(notification);
-
-  // 使通知可见
-  setTimeout(() => {
-    notification.classList.add("visible");
-  }, 10);
-
-  // 通知自动消失
-  setTimeout(() => {
-    notification.classList.remove("visible");
-
-    // 等待过渡效果完成后删除元素
-    notification.addEventListener(
-      "transitionend",
-      () => {
-        if (notification.parentNode) {
-          document.body.removeChild(notification);
-        }
-      },
-      { once: true },
-    );
-  }, CONFIG.UI.NOTIFICATION_DURATION);
-}
-}
-
-// 初始化上传器
-new ImageUploader();
-
-// 在控制台显示版本信息
-console.log("NodeSeek 图片上传工具 v1.4.0 已加载");
+  // 在控制台显示版本信息
+  console.log("NodeSeek 图片上传工具 v1.4.0 已加载");
 })();
